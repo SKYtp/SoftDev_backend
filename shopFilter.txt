@@ -1,0 +1,20 @@
+skinBetween
+//ex skinBetween=20,50   get value 20 <= x <= 50
+
+skinNumGreaterThan
+//ex skinNumGreaterThan=50  get value x > 50
+
+heroNumGreaterThan
+//ex heroNumGreaterThan=50  get value x > 50
+
+heroBetween
+//ex heroBetween=20,50   get value 20 <= x <= 50
+
+rank
+//ex rank=Gold get Gold rank
+
+priceGreaterThan
+//ex priceGreaterThan=5000 get value x > 5000
+
+priceBetween
+//ex priceBetween=5000,9000 get value 5000 <= x <= 9000

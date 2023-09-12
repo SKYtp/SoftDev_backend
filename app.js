@@ -151,27 +151,69 @@ app.get('/orders', function (req, res) {
     // Define the SQL query template
     let query = 'SELECT * FROM orders';
 
+    query += ` WHERE order_name <> ""`;
+
     // Check for query parameters and construct the SQL query accordingly
-    if (req.query.filter) {
-        const filter = req.query.filter;
-        query += ` WHERE order_name LIKE '%${filter}%' OR rank LIKE '%${filter}%'`;
-    }
+    // if (req.query.filter) {
+    //     const filter = req.query.filter;
+    //     query += ` WHERE order_name LIKE '%${filter}%' OR rank LIKE '%${filter}%'`;
+    // }
 
     if (req.query.skinNumGreaterThan) {
         const skinNumGreaterThan = parseInt(req.query.skinNumGreaterThan);
         //isNaN check if not number ex. 12 = false, hello = true
         if (!isNaN(skinNumGreaterThan)) {
-            if (req.query.filter) {
-                query += ` AND skin_num > ${skinNumGreaterThan}`;
-            } else {
-                query += ` WHERE skin_num > ${skinNumGreaterThan}`;
-            }
+            query += ` AND skin_num > ${skinNumGreaterThan}`;
+        }
+    }
+    if(req.query.skinBetween){
+        const skinBetween = req.query.skinBetween.split(",");
+        if(!isNaN(skinBetween[0]) && !isNaN(skinBetween[1])){
+            query += ` AND skin_num BETWEEN ${skinBetween[0]} AND ${skinBetween[1]}`
+        }
+    }
+    if(req.query.heroNumGreaterThan){
+        const heroNumGreaterThan = parseInt(req.query.heroNumGreaterThan);
+        if(!isNaN(heroNumGreaterThan)){
+            query += ` AND hero_num > ${heroNumGreaterThan}`;
+        }
+    }
+
+    if(req.query.heroBetween){
+        const heroBetween = req.query.heroBetween.split(",");
+        if(!isNaN(heroBetween[0]) && !isNaN(heroBetween[1])){
+            query += ` AND hero_num BETWEEN ${heroBetween[0]} AND ${heroBetween[1]}`
+        }
+    }
+
+    if(req.query.rank){
+        const rank = req.query.rank;
+        query += ` AND rank = '${req.query.rank}'`
+    }
+
+    if(req.query.priceGreaterThan){
+        const priceGreaterThan = parseInt(req.query.priceGreaterThan);
+        if(!isNaN(priceGreaterThan)){
+            query += ` AND price > ${priceGreaterThan}`;
+        }
+    }
+
+    if(req.query.priceBetween){
+        const priceBetween = req.query.priceBetween.split(",");
+        if(!isNaN(priceBetween[0]) && !isNaN(priceBetween[1])){
+            query += ` AND price BETWEEN ${priceBetween[0]} AND ${priceBetween[1]}`
         }
     }
 
     if (req.query.orderBy) {
         const orderBy = req.query.orderBy;
-        query += ` ORDER BY ${orderBy}`;
+        //query += ` ORDER BY ${orderBy}`;
+        if(req.query.orderBy == "ASC"){
+            query += ` ORDER BY price ASC`;
+        }
+        else if(req.query.orderBy == "DESC"){
+            query += ` ORDER BY price DESC`;
+        }
     }
 
     connection.execute(query, function (err, results, fields) {
