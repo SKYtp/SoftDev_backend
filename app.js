@@ -147,30 +147,55 @@ app.post('/order', upload.single('image'), function (req, res) {
 
 app.get('/orders', function (req, res) {
     console.log('Fetching orders...');
-    connection.execute(
-        'SELECT * FROM orders',
-        function (err, results, fields) {
-            if (err) {
-                console.error('Error fetching orders:', err);
-                res.json({ status: 'error', message: err });
-                return;
+
+    // Define the SQL query template
+    let query = 'SELECT * FROM orders';
+
+    // Check for query parameters and construct the SQL query accordingly
+    if (req.query.filter) {
+        const filter = req.query.filter;
+        query += ` WHERE order_name LIKE '%${filter}%' OR rank LIKE '%${filter}%'`;
+    }
+
+    if (req.query.skinNumGreaterThan) {
+        const skinNumGreaterThan = parseInt(req.query.skinNumGreaterThan);
+        //isNaN check if not number ex. 12 = false, hello = true
+        if (!isNaN(skinNumGreaterThan)) {
+            if (req.query.filter) {
+                query += ` AND skin_num > ${skinNumGreaterThan}`;
+            } else {
+                query += ` WHERE skin_num > ${skinNumGreaterThan}`;
             }
-
-            // Fetch and send image data for each order
-            const ordersWithImages = results.map((order) => {
-                const imagePath = order.image;
-                const imageData = fs.readFileSync(imagePath, 'base64'); // Read image as base64 data
-
-                return {
-                    ...order,
-                    image: `data:image/jpeg;base64,${imageData}`, // Adjust the content type based on your image type
-                };
-            });
-
-            res.json({ status: 'ok', orders: ordersWithImages });
         }
-    );
+    }
+
+    if (req.query.orderBy) {
+        const orderBy = req.query.orderBy;
+        query += ` ORDER BY ${orderBy}`;
+    }
+
+    connection.execute(query, function (err, results, fields) {
+        if (err) {
+            console.error('Error fetching orders:', err);
+            res.json({ status: 'error', message: err });
+            return;
+        }
+
+        // Fetch and send image data for each order
+        const ordersWithImages = results.map((order) => {
+            const imagePath = order.image;
+            const imageData = fs.readFileSync(imagePath, 'base64'); // Read image as base64 data
+
+            return {
+                ...order,
+                image: `data:image/jpeg;base64,${imageData}`, // Adjust the content type based on your image type
+            };
+        });
+
+        res.json({ status: 'ok', orders: ordersWithImages });
+    });
 });
+
 
 
 
