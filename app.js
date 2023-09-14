@@ -238,6 +238,31 @@ app.get('/orders', function (req, res) {
     });
 });
 
+app.get('/protected', (req, res) => {
+    const token = req.headers.authorization;
+  
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+  
+    // Verify and decode the JWT
+    jwt.verify(token, secret, (err, decoded) => {
+      if (err) {
+        return res.status(401).json({ message: 'Invalid token' });
+      }
+  
+      // The decoded payload contains user information
+      const { email } = decoded; // Change to 'email' because JWT payload contains email
+  
+      res.json({ message: 'Protected resource', email });
+    });
+});
+
+
+
+
+
+
 
 
 

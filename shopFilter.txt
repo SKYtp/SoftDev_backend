@@ -18,3 +18,5 @@ priceGreaterThan
 
 priceBetween
 //ex priceBetween=5000,9000 get value 5000 <= x <= 9000
+
+// ALL ex path/orders?priceBetween=5000,9000&heroNumGreaterThan=50
