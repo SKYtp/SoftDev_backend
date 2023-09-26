@@ -153,13 +153,7 @@ app.get('/orders', function (req, res) {
 
     let query = 'SELECT * FROM sellorder';
 
-    query += ` WHERE order_name <> ""`;
-
-    // Check for query parameters and construct the SQL query accordingly
-    // if (req.query.filter) {
-    //     const filter = req.query.filter;
-    //     query += ` WHERE order_name LIKE '%${filter}%' OR rank LIKE '%${filter}%'`;
-    // }
+    query += ` WHERE id=${req.query.send_id}`;
 
     if (req.query.skinNumGreaterThan) {
         const skinNumGreaterThan = parseInt(req.query.skinNumGreaterThan);
@@ -242,8 +236,12 @@ app.get('/orders', function (req, res) {
 
 app.get('/showOrder',function(req,res){
     let query = 'SELECT id, image, order_name, price FROM sellorder';
-
-    query += ` WHERE order_name <> ""`;
+    if(req.query.search){
+        query += ` WHERE order_name LIKE '%${req.query.search}%'`
+    }
+    else{
+        query += ` WHERE order_name <> ""`;
+    }
 
     if (req.query.skinNumGreaterThan) {
         const skinNumGreaterThan = parseInt(req.query.skinNumGreaterThan);
