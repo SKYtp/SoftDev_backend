@@ -117,8 +117,9 @@ app.post('/order', upload.single('image'), function (req, res) {
 
         // Store the image path in the database
         connection.execute(
-            'INSERT INTO orders (order_name, skin_num, rank, win_rate, gold, diamond, marble, coupon, price, hero_num, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO sellorder (seller_email,order_name, skin_num, rank, win_rate, gold, diamond, marble, coupon, price, hero_num, image,commission,status) VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?)',
             [
+                req.body.seller_email,
                 req.body.order_name,
                 req.body.skin_num,
                 req.body.rank,
@@ -130,6 +131,8 @@ app.post('/order', upload.single('image'), function (req, res) {
                 req.body.price,
                 req.body.hero_num,
                 imagePath, // Store the image path on the server
+                req.body.commission,
+                req.body.status
             ],
             function (err, results, fields) {
                 if (err) {
@@ -148,8 +151,7 @@ app.post('/order', upload.single('image'), function (req, res) {
 app.get('/orders', function (req, res) {
     console.log('Fetching orders...');
 
-    // Define the SQL query template
-    let query = 'SELECT * FROM orders';
+    let query = 'SELECT * FROM sellorder';
 
     query += ` WHERE order_name <> ""`;
 
@@ -238,6 +240,7 @@ app.get('/orders', function (req, res) {
     });
 });
 
+
 app.get('/protected', (req, res) => {
     const token = req.headers.authorization;
   
@@ -255,6 +258,100 @@ app.get('/protected', (req, res) => {
       const { email } = decoded; // Change to 'email' because JWT payload contains email
   
       res.json({ message: 'Protected resource', email });
+    });
+});
+
+const uploadPath_Boost_c = './uploads/boost/image_card';
+const uploadPath_Boost_p = './uploads/order/image_person';
+const uploadPath_Boost_f = './uploads/order/image';
+
+if (!fs.existsSync(uploadPath_Boost_c)) {
+    fs.mkdirSync(uploadPath_Boost_c, { recursive: true });
+}
+if (!fs.existsSync(uploadPath_Boost_p)) {
+    fs.mkdirSync(uploadPath_Boost_p, { recursive: true });
+}
+if (!fs.existsSync(uploadPath_Boost_f)) {
+    fs.mkdirSync(uploadPath_Boost_f, { recursive: true });
+}
+
+app.post('/boost', upload.fields([{ name: 'image_c' }, { name: 'image_p' }, { name: 'image_f' }]), function (req, res) {
+    // Extract the file types (extensions) from the uploaded image filenames
+    const fileExtension1 = req.files['image_c'][0].originalname.split('.').pop().toLowerCase();
+    const fileExtension2 = req.files['image_p'][0].originalname.split('.').pop().toLowerCase();
+    const fileExtension3 = req.files['image_f'][0].originalname.split('.').pop().toLowerCase();
+
+    // Generate unique filenames for the images based on timestamps
+    const timestamp = Date.now();
+    const uniqueFilename1 = `${timestamp}_1.${fileExtension1}`;
+    const uniqueFilename2 = `${timestamp}_2.${fileExtension2}`;
+    const uniqueFilename3 = `${timestamp}_3.${fileExtension3}`;
+
+    // Construct the image paths on the server
+    const imagePath1 = `${uploadPath_Boost_c}/${uniqueFilename1}`;
+    const imagePath2 = `${uploadPath_Boost_p}/${uniqueFilename2}`;
+    const imagePath3 = `${uploadPath_Boost_f}/${uniqueFilename3}`;
+
+    // Store the images on the server
+    fs.writeFile(imagePath1, req.files['image_c'][0].buffer, (err1) => {
+        if (err1) {
+            console.error('Error storing the first image:', err1);
+            res.json({ status: 'error', message: 'Error storing the first image.' });
+            return;
+        }
+        console.log('First image stored successfully:', imagePath1);
+
+        fs.writeFile(imagePath2, req.files['image_p'][0].buffer, (err2) => {
+            if (err2) {
+                console.error('Error storing the second image:', err2);
+                res.json({ status: 'error', message: 'Error storing the second image.' });
+                return;
+            }
+            console.log('Second image stored successfully:', imagePath2);
+
+            fs.writeFile(imagePath3, req.files['image_f'][0].buffer, (err3) => {
+                if (err3) {
+                    console.error('Error storing the third image:', err3);
+                    res.json({ status: 'error', message: 'Error storing the third image.' });
+                    return;
+                }
+                console.log('Third image stored successfully:', imagePath3);
+
+                // Store the image paths in the database
+                connection.execute(
+                    'INSERT INTO boost (name, p_email, surname, birth, email, tel, address, province, postcode, facebook, line,rank,star_price,m_rank,winrate, card_pic, pic, promote_pic) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    [
+                        req.body.name,
+                        req.body.p_email,
+                        req.body.surname,
+                        req.body.birth,
+                        req.body.email,
+                        req.body.tel,
+                        req.body.address,
+                        req.body.province,
+                        req.body.postcode,
+                        req.body.facebook,
+                        req.body.line,
+                        req.body.rank,
+                        req.body.star_price,
+                        req.body.m_rank,
+                        req.body.winrate,
+                        imagePath1,
+                        imagePath2,
+                        imagePath3,
+                    ],
+                    function (err, results, fields) {
+                        if (err) {
+                            console.error('Error inserting data into the database:', err);
+                            res.json({ status: 'error', message: err });
+                            return;
+                        }
+                        console.log('Order inserted successfully.');
+                        res.json({ status: 'ok' });
+                    }
+                );
+            });
+        });
     });
 });
 
