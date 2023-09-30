@@ -348,9 +348,9 @@ app.get('/protected', (req, res) => {
     });
 });
 
-const uploadPath_Boost_c = './uploads/boost/image_card';
-const uploadPath_Boost_p = './uploads/order/image_person';
-const uploadPath_Boost_f = './uploads/order/image';
+const uploadPath_Boost_c = './uploads/boost/card_pic';
+const uploadPath_Boost_p = './uploads/boost/face_pic';
+const uploadPath_Boost_f = './uploads/boost/promote_pic';
 
 if (!fs.existsSync(uploadPath_Boost_c)) {
     fs.mkdirSync(uploadPath_Boost_c, { recursive: true });
@@ -362,11 +362,11 @@ if (!fs.existsSync(uploadPath_Boost_f)) {
     fs.mkdirSync(uploadPath_Boost_f, { recursive: true });
 }
 
-app.post('/boost', upload.fields([{ name: 'image_c' }, { name: 'image_p' }, { name: 'image_f' }]), function (req, res) {
+app.post('/boost', upload.fields([{ name: 'card_pic' }, { name: 'face_pic' }, { name: 'promote_pic' }]), function (req, res) {
     // Extract the file types (extensions) from the uploaded image filenames
-    const fileExtension1 = req.files['image_c'][0].originalname.split('.').pop().toLowerCase();
-    const fileExtension2 = req.files['image_p'][0].originalname.split('.').pop().toLowerCase();
-    const fileExtension3 = req.files['image_f'][0].originalname.split('.').pop().toLowerCase();
+    const fileExtension1 = req.files['card_pic'][0].originalname.split('.').pop().toLowerCase();
+    const fileExtension2 = req.files['face_pic'][0].originalname.split('.').pop().toLowerCase();
+    const fileExtension3 = req.files['promote_pic'][0].originalname.split('.').pop().toLowerCase();
 
     // Generate unique filenames for the images based on timestamps
     const timestamp = Date.now();
@@ -380,7 +380,7 @@ app.post('/boost', upload.fields([{ name: 'image_c' }, { name: 'image_p' }, { na
     const imagePath3 = `${uploadPath_Boost_f}/${uniqueFilename3}`;
 
     // Store the images on the server
-    fs.writeFile(imagePath1, req.files['image_c'][0].buffer, (err1) => {
+    fs.writeFile(imagePath1, req.files['card_pic'][0].buffer, (err1) => {
         if (err1) {
             console.error('Error storing the first image:', err1);
             res.json({ status: 'error', message: 'Error storing the first image.' });
@@ -388,7 +388,7 @@ app.post('/boost', upload.fields([{ name: 'image_c' }, { name: 'image_p' }, { na
         }
         console.log('First image stored successfully:', imagePath1);
 
-        fs.writeFile(imagePath2, req.files['image_p'][0].buffer, (err2) => {
+        fs.writeFile(imagePath2, req.files['face_pic'][0].buffer, (err2) => {
             if (err2) {
                 console.error('Error storing the second image:', err2);
                 res.json({ status: 'error', message: 'Error storing the second image.' });
@@ -396,24 +396,18 @@ app.post('/boost', upload.fields([{ name: 'image_c' }, { name: 'image_p' }, { na
             }
             console.log('Second image stored successfully:', imagePath2);
 
-            fs.writeFile(imagePath3, req.files['image_f'][0].buffer, (err3) => {
+            fs.writeFile(imagePath3, req.files['promote_pic'][0].buffer, (err3) => {
                 if (err3) {
                     console.error('Error storing the third image:', err3);
                     res.json({ status: 'error', message: 'Error storing the third image.' });
                     return;
                 }
                 console.log('Third image stored successfully:', imagePath3);
-
                 // Store the image paths in the database
                 connection.execute(
-                    'INSERT INTO boost (name, p_email, surname, birth, email, tel, address, province, postcode, facebook, line,rank,star_price,m_rank,winrate, card_pic, pic, promote_pic) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    'INSERT INTO boosterdetail (booster_email, address, province, postcode, facebook, line, rank, star_price, max_rank, winrate, card_pic, face_pic, promote_pic, application_fee, status, Boosting_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                     [
-                        req.body.name,
-                        req.body.p_email,
-                        req.body.surname,
-                        req.body.birth,
-                        req.body.email,
-                        req.body.tel,
+                        req.body.booster_email||null,
                         req.body.address,
                         req.body.province,
                         req.body.postcode,
@@ -421,11 +415,14 @@ app.post('/boost', upload.fields([{ name: 'image_c' }, { name: 'image_p' }, { na
                         req.body.line,
                         req.body.rank,
                         req.body.star_price,
-                        req.body.m_rank,
+                        req.body.max_rank,
                         req.body.winrate,
                         imagePath1,
                         imagePath2,
                         imagePath3,
+                        req.body.application_fee,
+                        req.body.status,
+                        req.body.Boosting_number,
                     ],
                     function (err, results, fields) {
                         if (err) {
