@@ -155,63 +155,6 @@ app.get('/orders', function (req, res) {
 
     query += ` WHERE id=${req.query.send_id}`;
 
-    if (req.query.skinNumGreaterThan) {
-        const skinNumGreaterThan = parseInt(req.query.skinNumGreaterThan);
-        //isNaN check if not number ex. 12 = false, hello = true
-        if (!isNaN(skinNumGreaterThan)) {
-            query += ` AND skin_num > ${skinNumGreaterThan}`;
-        }
-    }
-    if(req.query.skinBetween){
-        const skinBetween = req.query.skinBetween.split(",");
-        if(!isNaN(skinBetween[0]) && !isNaN(skinBetween[1])){
-            query += ` AND skin_num BETWEEN ${skinBetween[0]} AND ${skinBetween[1]}`
-        }
-    }
-    if(req.query.heroNumGreaterThan){
-        const heroNumGreaterThan = parseInt(req.query.heroNumGreaterThan);
-        if(!isNaN(heroNumGreaterThan)){
-            query += ` AND hero_num > ${heroNumGreaterThan}`;
-        }
-    }
-
-    if(req.query.heroBetween){
-        const heroBetween = req.query.heroBetween.split(",");
-        if(!isNaN(heroBetween[0]) && !isNaN(heroBetween[1])){
-            query += ` AND hero_num BETWEEN ${heroBetween[0]} AND ${heroBetween[1]}`
-        }
-    }
-
-    if(req.query.rank){
-        const rank = req.query.rank;
-        query += ` AND rank = '${req.query.rank}'`
-    }
-
-    if(req.query.priceGreaterThan){
-        const priceGreaterThan = parseInt(req.query.priceGreaterThan);
-        if(!isNaN(priceGreaterThan)){
-            query += ` AND price > ${priceGreaterThan}`;
-        }
-    }
-
-    if(req.query.priceBetween){
-        const priceBetween = req.query.priceBetween.split(",");
-        if(!isNaN(priceBetween[0]) && !isNaN(priceBetween[1])){
-            query += ` AND price BETWEEN ${priceBetween[0]} AND ${priceBetween[1]}`
-        }
-    }
-
-    if (req.query.orderBy) {
-        const orderBy = req.query.orderBy;
-        //query += ` ORDER BY ${orderBy}`;
-        if(req.query.orderBy == "ASC"){
-            query += ` ORDER BY price ASC`;
-        }
-        else if(req.query.orderBy == "DESC"){
-            query += ` ORDER BY price DESC`;
-        }
-    }
-
     connection.execute(query, function (err, results, fields) {
         if (err) {
             console.error('Error fetching orders:', err);
@@ -236,11 +179,11 @@ app.get('/orders', function (req, res) {
 
 app.get('/showOrder',function(req,res){
     let query = 'SELECT id, image, order_name, price FROM sellorder';
+
+    query += ` WHERE status = 'sell'`
+
     if(req.query.search){
-        query += ` WHERE order_name LIKE '%${req.query.search}%'`
-    }
-    else{
-        query += ` WHERE order_name <> ""`;
+        query += ` AND order_name LIKE '%${req.query.search}%'`
     }
 
     if (req.query.skinNumGreaterThan) {
@@ -438,6 +381,101 @@ app.post('/boost', upload.fields([{ name: 'card_pic' }, { name: 'face_pic' }, { 
         });
     });
 });
+
+app.get('/showBoost',function(req,res){
+    let query = 'SELECT id, winrate, rank, star_price, booster_email, promote_pic FROM boosterdetail'
+    query += ` WHERE status = 'ready'`
+    if(req.query.winrateGreaterThan){
+        const winrateGreaterThan = parseInt(req.query.winrateGreaterThan);
+        //isNaN check if not number ex. 12 = false, hello = true
+        if (!isNaN(winrateGreaterThan)) {
+            query += ` AND winrate > ${winrateGreaterThan}`;
+        }
+    }
+
+    if(req.query.winrateBetween){
+        const winrateBetween = req.query.winrateBetween.split(",");
+        if(!isNaN(winrateBetween[0]) && !isNaN(winrateBetween[1])){
+            query += ` AND winrate BETWEEN ${winrateBetween[0]} AND ${winrateBetween[1]}`
+        }
+    }
+
+    if(req.query.star_priceGreaterThan){
+        const star_priceGreaterThan = parseInt(req.query.star_priceGreaterThan);
+        if(!isNaN(star_priceGreaterThan)){
+            query += ` AND star_price > ${star_priceGreaterThan}`;
+        }
+    }
+
+    if(req.query.star_priceBetween){
+        const star_priceBetween = req.query.star_priceBetween.split(",");
+        if(!isNaN(star_priceBetween[0]) && !isNaN(star_priceBetween[1])){
+            query += ` AND star_price BETWEEN ${star_priceBetween[0]} AND ${star_priceBetween[1]}`
+        }
+    }
+
+    if(req.query.rank){
+        const rank = req.query.rank.split(",");
+        query += ` AND (`;
+        for(let i in rank){
+            if(i == 0){
+                query += `rank='${rank[i]}'`;
+            }
+            else{
+                query += ` OR rank='${rank[i]}'`;
+            }
+        }
+        query += `)`;
+    }
+    if (req.query.orderBy) {
+        const orderBy = req.query.orderBy;
+        if(req.query.orderBy == "ASC"){
+            query += ` ORDER BY star_price ASC`;
+        }
+        else if(req.query.orderBy == "DESC"){
+            query += ` ORDER BY star_price DESC`;
+        }
+    }
+    connection.execute(query, function(err, results, fields){
+        if(err){
+            console.error('Error fetching boost:', err);
+            res.json({ status: 'error', message: err });
+            return;
+        }
+        const boostWithImages = results.map((boost) => {
+            const imagePath = boost.promote_pic
+            const imageData = fs.readFileSync(imagePath, 'base64')
+            return{
+                ...boost,
+                promote_pic: `data:image/jpeg;base64,${imageData}`, // Adjust the content type based on your image type
+
+            }
+        })
+        res.json({status: 'ok', boosts: boostWithImages})
+    })
+})
+
+app.get('/getBoost/byID/:id', function(req,res){
+    let query = 'SELECT booster_email, rank, star_price, max_rank, winrate, promote_pic, Boosting_number FROM boosterdetail'
+    query += ` WHERE id=${req.params['id']}`
+    connection.execute(query, function(err, results, fields){
+        if(err){
+            console.error('Error fetching orders:', err);
+            res.json({ status: 'error', message: err });
+            return; 
+        }
+        const boostWithImages = results.map((boost) => {
+            const imagePath = boost.promote_pic
+            const imageData = fs.readFileSync(imagePath, 'base64')
+            return{
+                ...boost,
+                promote_pic: `data:image/jpeg;base64,${imageData}`, // Adjust the content type based on your image type
+
+            }
+        })
+        res.json({status: 'ok', boosts: boostWithImages})
+    })
+})
 
 
 
